@@ -1,49 +1,94 @@
+let outBridge = null;
 
 chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: 'insta-pic',
+    title: 'Insta',
+    type: 'normal',
+    contexts: ['page'],
+  });
   chrome.action.onClicked.addListener((/* tab */) => {
     // Opens our extension in a new browser window.
     // Only if a popup isn't defined in the manifest.
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('www/index.html')
-    }, (/* newTab */) => {
-      // Tab opened.
-    })
-  })
-})
+    chrome.tabs.create(
+      {
+        url: chrome.runtime.getURL('www/index.html'),
+      },
+      (/* newTab */) => {
+        // Tab opened.
+      }
+    );
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((item, tab) => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      {
+        type: 'contextIconClicked',
+        item,
+        tab,
+      },
+      function (response) {
+        if (response.type === 'image.clicked') {
+          console.log('clicked image', response.data);
+
+          fetch(response.data.src)
+            .then((response) => {
+              return response.blob();
+            })
+            .then(async (blob) => {
+              console.log('blob received', blob);
+              let reader = new FileReader();
+              reader.readAsDataURL(blob);
+
+              reader.onload = function () {
+                outBridge.send('open.preview', {
+                  src: reader.result,
+                });
+              };
+            });
+        }
+      }
+    );
+  });
+});
 
 export default function (bridge /* , allActiveConnections */) {
-  bridge.on('storage.get', event => {
-    const payload = event.data
+  outBridge = bridge;
+  bridge.on('storage.get', (event) => {
+    const payload = event.data;
     if (payload.key === null) {
-      chrome.storage.local.get(null, r => {
-        const result = []
+      chrome.storage.local.get(null, (r) => {
+        const result = [];
 
         // Group the items up into an array to take advantage of the bridge's chunk splitting.
         for (const itemKey in r) {
-          result.push(r[itemKey])
+          result.push(r[itemKey]);
         }
-        bridge.send(event.eventResponseKey, result)
-      })
+        bridge.send(event.eventResponseKey, result);
+      });
     } else {
-      chrome.storage.local.get([payload.key], r => {
-        bridge.send(event.eventResponseKey, r[payload.key])
-      })
+      chrome.storage.local.get([payload.key], (r) => {
+        bridge.send(event.eventResponseKey, r[payload.key]);
+      });
     }
-  })
+  });
 
-  bridge.on('storage.set', event => {
-    const payload = event.data
+  bridge.on('storage.set', (event) => {
+    const payload = event.data;
     chrome.storage.local.set({ [payload.key]: payload.data }, () => {
-      bridge.send(event.eventResponseKey, payload.data)
-    })
-  })
+      bridge.send(event.eventResponseKey, payload.data);
+    });
+  });
 
-  bridge.on('storage.remove', event => {
-    const payload = event.data
+  bridge.on('storage.remove', (event) => {
+    const payload = event.data;
     chrome.storage.local.remove(payload.key, () => {
-      bridge.send(event.eventResponseKey, payload.data)
-    })
-  })
+      bridge.send(event.eventResponseKey, payload.data);
+    });
+  });
 
   /*
   // EXAMPLES
