@@ -1,26 +1,40 @@
 <template>
   <q-dialog v-model="confirm" persistent @hide="handleDialogHide">
-    <q-card>
-      <q-card-section class="row items-center">
-        <q-img
-          v-for="image in images"
-          :src="image.src"
-          alt="picture preview"
+    <q-card style="width: 500px; max-width: 80vw">
+      <q-card-section class="column items-center q-gutter-y-sm">
+        <div
+          v-for="(image, index) in images"
           :key="image.src"
-          width="300px"
-        />
+          style="width: 400px"
+        >
+          <q-img
+            :src="image.src"
+            alt="picture preview"
+            class="rounded-borders"
+            fit="fill"
+          >
+            <q-icon
+              class="absolute all-pointer-events"
+              size="32px"
+              name="highlight_off"
+              color="black"
+              style="top: 8px; right: 8px"
+              @click="removeImage(index)"
+            >
+              <q-tooltip> Remover </q-tooltip>
+            </q-icon>
+          </q-img>
+        </div>
       </q-card-section>
 
       <q-card-actions align="right">
-        <q-btn flat label="Cancel" color="primary" v-close-popup />
-        <q-btn flat label="Turn on Wifi" color="primary" v-close-popup />
+        <q-btn flat label="Fechar" color="primary" v-close-popup />
       </q-card-actions>
     </q-card>
   </q-dialog>
 </template>
 <script lang="ts">
 import { useQuasar } from 'quasar';
-import { api } from 'src/boot/axios';
 import { defineComponent, ref } from 'vue';
 
 export type QuasarBEXPayload = {
@@ -28,6 +42,7 @@ export type QuasarBEXPayload = {
 } & Record<string, any>;
 
 interface Image {
+  id: number;
   src: string;
   author: string;
 }
@@ -52,19 +67,28 @@ export default defineComponent({
         {
           src: data.src,
           author: '',
+          id: Date.now(),
         },
       ];
       $q.bex.send('mount.iframe');
       $q.bex.send((payload as QuasarBEXPayload).eventResponseKey);
     });
 
+    const closeModal = () => $q.bex.send('unmount.iframe');
     const handleDialogHide = () => {
-      $q.bex.send('unmount.iframe');
+      closeModal();
+    };
+
+    const removeImage = (index: number) => {
+      images.value.splice(index, 1);
+
+      if (images.value.length == 0) closeModal();
     };
     return {
       confirm,
       images,
       handleDialogHide,
+      removeImage,
     };
   },
 });

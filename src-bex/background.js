@@ -1,4 +1,4 @@
-let outBridge = null;
+let outBridge = null; // randomly gets undefined :(
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
