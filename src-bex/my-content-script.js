@@ -1,18 +1,40 @@
 // Hooks added here have a bridge allowing communication between the BEX Content Script and the Quasar Application.
 // More info: https://quasar.dev/quasar-cli/developing-browser-extensions/content-hooks
 
+import { resetIFrameHeight, setIFrameHeight } from './iframe';
+
+/**
+ * stores click event triggered when context menu icon is clicked
+ * @var {MouseEvent}
+ */
 let clickEvent = null;
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request?.type === 'contextIconClicked') {
-    console.log(request?.item, request?.tab, clickEvent);
+// FEED | PROFILE
+let postType = 'FEED';
 
-    const { src } = getSinglePictureFromClickEvent(clickEvent);
-    const author = getPictureAuthorFromClickEvent(clickEvent);
-    if (src && author) {
+let isTheaterMode = false;
+let postHasMultipleImages = false;
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request?.type === 'context.icon.clicked') {
+    console.log(request);
+
+    if (request.tab.url.includes('/p/')) postType = 'PROFILE';
+
+    try {
+      const { src } = getSinglePictureFromClickEvent(clickEvent);
+      const author = getPictureAuthorFromClickEvent(clickEvent);
+      if (src && author) {
+        sendResponse({
+          type: 'image.clicked',
+          data: { src, author },
+        });
+      }
+    } catch (error) {
+      console.error(error);
       sendResponse({
-        type: 'image.clicked',
-        data: { src, author },
+        type: 'error.fired',
+        data: { code: error.message },
       });
     }
   }
@@ -33,8 +55,12 @@ if (!eventAdded) {
  *
  * @param { MouseEvent} event
  */
-const getSinglePictureFromClickEvent = (event) =>
-  event.path[0]?.previousElementSibling?.firstElementChild;
+const getSinglePictureFromClickEvent = (event) => {
+  const img = event.path[0]?.previousElementSibling?.firstElementChild;
+  if (!img?.src) throw new Error('GET_PICTURE_ERROR');
+
+  return img;
+};
 
 /**
  *
@@ -44,54 +70,16 @@ const getPictureAuthorFromClickEvent = (event) => {
   const article = event.path.find(
     (el) => el.tagName.toLowerCase() === 'article'
   );
+  if (!article) throw new Error('ARTICLE_TAG_NOT_FOUND');
 
-  return article.firstElementChild.firstElementChild.getElementsByTagName(
-    'a'
-  )[1].href;
+  let profileLlink = article
+    ?.getElementsByTagName('header')[0]
+    .getElementsByTagName('a')[0].href;
+
+  if (!profileLlink) throw new Error('PROFILE_LINK_NOT_FOUND');
+
+  return profileLlink;
 };
-
-const iFrame = document.createElement('iframe'),
-  defaultFrameHeight = '0px';
-
-/**
- * Set the height of our iFrame housing our BEX
- * @param height
- */
-const setIFrameHeight = (height) => {
-  iFrame.height = height;
-};
-
-/**
- * Reset the iFrame to its default height e.g The height of the top bar.
- */
-const resetIFrameHeight = () => {
-  setIFrameHeight(defaultFrameHeight);
-};
-
-/**
- * The code below will get everything going. Initialize the iFrame with defaults and add it to the page.
- * @type {string}
- */
-iFrame.id = 'bex-app-iframe';
-iFrame.width = '100%';
-resetIFrameHeight();
-
-// Assign some styling so it looks seamless
-Object.assign(iFrame.style, {
-  position: 'fixed',
-  top: '0',
-  right: '0',
-  bottom: '0',
-  left: '0',
-  border: '0',
-  zIndex: '9999999', // Make sure it's on top
-  overflow: 'visible',
-});
-(function () {
-  // When the page loads, insert our browser extension app.
-  iFrame.src = chrome.runtime.getURL('www/index.html');
-  document.body.prepend(iFrame);
-})();
 
 export default function (bridge) {
   /**

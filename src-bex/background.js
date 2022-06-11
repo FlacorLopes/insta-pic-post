@@ -26,30 +26,36 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
     chrome.tabs.sendMessage(
       tabs[0].id,
       {
-        type: 'contextIconClicked',
+        type: 'context.icon.clicked',
         item,
         tab,
       },
       function (response) {
-        if (response.type === 'image.clicked') {
-          console.log('clicked image', response.data);
-
-          fetch(response.data.src)
-            .then((response) => {
-              return response.blob();
-            })
-            .then(async (blob) => {
-              console.log('blob received', blob);
-              let reader = new FileReader();
-              reader.readAsDataURL(blob);
-
-              reader.onload = function () {
-                outBridge.send('open.preview', {
-                  src: reader.result,
-                  author: response.data.author,
-                });
-              };
-            });
+        switch (response.type) {
+          case 'image.clicked':
+            fetch(response.data.src)
+              .then((response) => {
+                return response.blob();
+              })
+              .then(async (blob) => {
+                let reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onload = function () {
+                  outBridge.send('open.preview', {
+                    src: reader.result,
+                    author: response.data.author,
+                  });
+                };
+              });
+            break;
+          case 'error.fired':
+            try {
+              outBridge.send('error.fired', {
+                code: response.data.code,
+              });
+            } catch (error) {
+              console.log(error);
+            }
         }
       }
     );
@@ -91,6 +97,9 @@ export default function (bridge /* , allActiveConnections */) {
     });
   });
 
+  bridge.on('mount.frame', (d) => {
+    console.log('back', d);
+  });
   /*
   // EXAMPLES
   // Listen to a message from the client

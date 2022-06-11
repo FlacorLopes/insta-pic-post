@@ -60,8 +60,6 @@ export default defineComponent({
     $q.bex.on('open.preview', async (payload) => {
       const { data } = payload as QuasarBEXPayload;
 
-      console.log('vue', data.src, payload);
-
       confirm.value = true;
       images.value = [
         ...images.value,
@@ -73,6 +71,20 @@ export default defineComponent({
       ];
       $q.bex.send('mount.iframe');
       $q.bex.send((payload as QuasarBEXPayload).eventResponseKey);
+    });
+    $q.bex.on('error.fired', (payload) => {
+      const { data } = payload as QuasarBEXPayload;
+
+      $q.bex.send('mount.iframe').then(() => {
+        $q.notify({
+          type: 'warning',
+          multiLine: true,
+          message: `Ocorreu um erro: ${data.code}`,
+          icon: 'no_photography',
+          onDismiss: async () => await closeModal(),
+        });
+        $q.bex.send((payload as QuasarBEXPayload).eventResponseKey);
+      });
     });
 
     const closeModal = () => $q.bex.send('unmount.iframe');
