@@ -1,44 +1,54 @@
 // Hooks added here have a bridge allowing communication between the BEX Content Script and the Quasar Application.
 // More info: https://quasar.dev/quasar-cli/developing-browser-extensions/content-hooks
 
-(function () {
-  let clickEvent = null;
+let clickEvent = null;
 
-  chrome.runtime.onMessage.addListener(function (
-    request,
-    sender,
-    sendResponse
-  ) {
-    if (request?.type === 'contextIconClicked') {
-      console.log(request?.item, request?.tab, clickEvent);
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request?.type === 'contextIconClicked') {
+    console.log(request?.item, request?.tab, clickEvent);
 
-      const { src } = getSinglePictureFromClickEvent(clickEvent);
-      if (src) {
-        sendResponse({
-          type: 'image.clicked',
-          data: { src },
-        });
-      }
-
-      // sendResponse('goodbye');
+    const { src } = getSinglePictureFromClickEvent(clickEvent);
+    const author = getPictureAuthorFromClickEvent(clickEvent);
+    if (src && author) {
+      sendResponse({
+        type: 'image.clicked',
+        data: { src, author },
+      });
     }
-  });
-
-  let eventAdded = false;
-  if (!eventAdded) {
-    document.addEventListener('mousedown', (e) => {
-      clickEvent = e;
-    });
-    eventAdded = true;
   }
+});
 
-  /**
-   *
-   * @param { MouseEvent} event
-   */
-  const getSinglePictureFromClickEvent = (event) =>
-    event.path[0]?.previousElementSibling?.firstElementChild;
-})();
+let eventAdded = false;
+if (!eventAdded) {
+  /*
+      captures the click event when context menu icon is clicked
+    */
+  document.addEventListener('mousedown', (e) => {
+    clickEvent = e;
+  });
+  eventAdded = true;
+}
+
+/**
+ *
+ * @param { MouseEvent} event
+ */
+const getSinglePictureFromClickEvent = (event) =>
+  event.path[0]?.previousElementSibling?.firstElementChild;
+
+/**
+ *
+ * @param { MouseEvent} event
+ */
+const getPictureAuthorFromClickEvent = (event) => {
+  const article = event.path.find(
+    (el) => el.tagName.toLowerCase() === 'article'
+  );
+
+  return article.firstElementChild.firstElementChild.getElementsByTagName(
+    'a'
+  )[1].href;
+};
 
 const iFrame = document.createElement('iframe'),
   defaultFrameHeight = '0px';

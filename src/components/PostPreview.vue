@@ -24,6 +24,7 @@
               <q-tooltip> Remover </q-tooltip>
             </q-icon>
           </q-img>
+          <div class="text-center text-caption">{{ image.author }}</div>
         </div>
       </q-card-section>
 
@@ -66,7 +67,7 @@ export default defineComponent({
         ...images.value,
         {
           src: data.src,
-          author: '',
+          author: data.author,
           id: Date.now(),
         },
       ];

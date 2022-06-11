@@ -46,6 +46,7 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
               reader.onload = function () {
                 outBridge.send('open.preview', {
                   src: reader.result,
+                  author: response.data.author,
                 });
               };
             });
