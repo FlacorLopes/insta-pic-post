@@ -6,6 +6,8 @@ obtê-la, junto com um link para o autor do post.
 Além disso, permite copiar para a área de trabalho o conteúdo selecionado.
 
 Útil para postagens em fóruns e afins.
+![enter image description here](https://i.imgur.com/RZAMy8J.jpeg)
+
 
 ## Install the dependencies
 
