@@ -17,8 +17,6 @@ let postHasMultipleImages = false;
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request?.type === 'context.icon.clicked') {
-    console.log(request);
-
     if (request.tab.url.includes('/p/')) postType = 'PROFILE';
 
     try {

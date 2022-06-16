@@ -38,5 +38,6 @@ Object.assign(iFrame.style, {
 (function () {
   // When the page loads, insert our browser extension app.
   iFrame.src = chrome.runtime.getURL('www/index.html');
+  iFrame.allow = 'clipboard-write';
   document.body.prepend(iFrame);
 })();

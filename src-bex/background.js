@@ -1,4 +1,4 @@
-let outBridge = null; // randomly gets undefined :(
+let outBridge = null; // TODO: randomly gets undefined :(
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -7,24 +7,12 @@ chrome.runtime.onInstalled.addListener(() => {
     type: 'normal',
     contexts: ['page'],
   });
-  chrome.action.onClicked.addListener((/* tab */) => {
-    // Opens our extension in a new browser window.
-    // Only if a popup isn't defined in the manifest.
-    chrome.tabs.create(
-      {
-        url: chrome.runtime.getURL('www/index.html'),
-      },
-      (/* newTab */) => {
-        // Tab opened.
-      }
-    );
-  });
 });
 
 chrome.contextMenus.onClicked.addListener((item, tab) => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     chrome.tabs.sendMessage(
-      tabs[0].id,
+      tab.id,
       {
         type: 'context.icon.clicked',
         item,
@@ -54,7 +42,7 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
                 code: response.data.code,
               });
             } catch (error) {
-              console.log(error);
+              console.error(error);
             }
         }
       }
@@ -97,9 +85,6 @@ export default function (bridge /* , allActiveConnections */) {
     });
   });
 
-  bridge.on('mount.frame', (d) => {
-    console.log('back', d);
-  });
   /*
   // EXAMPLES
   // Listen to a message from the client

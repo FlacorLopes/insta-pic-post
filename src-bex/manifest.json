@@ -20,7 +20,7 @@
     {
       "matches": ["*://*.instagram.com/*"],
       "css": ["assets/content.css"],
-      "js": ["my-content-script.js"]
+      "js": ["instagram.js"]
     }
   ],
 
