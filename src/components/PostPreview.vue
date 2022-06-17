@@ -29,7 +29,10 @@
       </div>
       <q-separator />
       <q-scroll-area style="height: 80vh">
-        <q-card-section class="column items-center q-gutter-y-sm" id="imgList">
+        <q-card-section
+          class="column items-center q-gutter-y-sm relative-position"
+          id="imgList"
+        >
           <div
             v-for="(image, index) in images"
             :key="image"
@@ -58,13 +61,19 @@
               <a :href="image.author">{{ getImageAuthor(image.author) }}</a>
             </div>
           </div>
+          <q-inner-loading
+            :showing="isLoading"
+            label="Carregando imagem..."
+            label-class="text-teal"
+            label-style="font-size: 1.1em"
+          />
         </q-card-section>
       </q-scroll-area>
     </q-card>
   </q-dialog>
 </template>
 <script lang="ts">
-import { useQuasar } from 'quasar';
+import { uid, useQuasar } from 'quasar';
 import { defineComponent, nextTick, ref } from 'vue';
 
 export type QuasarBEXPayload = {
@@ -72,7 +81,7 @@ export type QuasarBEXPayload = {
 } & Record<string, any>;
 
 interface Image {
-  id: number;
+  id: string;
   src: string;
   author: string;
 }
@@ -84,23 +93,34 @@ export default defineComponent({
   setup() {
     const $q = useQuasar();
     const confirm = ref(false);
+    const isLoading = ref(false);
     const images = ref<Image[]>([]);
     const isCopying = ref(false);
+    const reader = new FileReader();
 
     $q.bex.on('open.preview', async (payload) => {
       const { data } = payload as QuasarBEXPayload;
 
       confirm.value = true;
-      images.value = [
-        ...images.value,
-        {
-          src: data.src,
-          author: data.author,
-          id: Date.now(),
-        },
-      ];
+      isLoading.value = true;
       $q.bex.send('mount.iframe');
       $q.bex.send((payload as QuasarBEXPayload).eventResponseKey);
+
+      const response = await fetch(data.src);
+      const blob = await response.blob();
+
+      reader.readAsDataURL(blob);
+      reader.onload = () => {
+        images.value = [
+          ...images.value,
+          {
+            src: <string>reader.result,
+            author: data.author,
+            id: uid(),
+          },
+        ];
+        isLoading.value = false;
+      };
     });
     $q.bex.on('error.fired', (payload) => {
       const { data } = payload as QuasarBEXPayload;
@@ -129,6 +149,13 @@ export default defineComponent({
     };
 
     const askWriteClipboardPermission = async () => {
+      const response = await fetch(
+        'https://instagram.fssa20-1.fna.fbcdn.net/v/t51.2885-15/287967397_1480351305758573_5455054683528624605_n.jpg?stp=dst-jpg_e35_p1080x1080&_nc_ht=instagram.fssa20-1.fna.fbcdn.net&_nc_cat=1&_nc_ohc=LJ8yLQBDyRsAX-dwNOi&edm=AJ9x6zYBAAAA&ccb=7-5&ig_cache_key=Mjg2MjI2NTQ1NDQ4ODkzMTEzMQ%3D%3D.2-ccb7-5&oh=00_AT-LihrBE1pqiGUVTh5NP7orHf-r89LsvWrpTcAamKpOBg&oe=62B274A2&_nc_sid=cff2a4'
+      );
+      const blob = await response.blob();
+
+      console.log('o blobão', blob, images.value);
+
       try {
         const { state } = await navigator.permissions.query({
           name: 'clipboard-write',
@@ -191,6 +218,7 @@ export default defineComponent({
       confirm,
       images,
       isCopying,
+      isLoading,
       handleDialogHide,
       removeImage,
       copyContent,

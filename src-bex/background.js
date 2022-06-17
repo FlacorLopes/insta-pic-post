@@ -21,20 +21,10 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
       function (response) {
         switch (response.type) {
           case 'image.clicked':
-            fetch(response.data.src)
-              .then((response) => {
-                return response.blob();
-              })
-              .then(async (blob) => {
-                let reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onload = function () {
-                  outBridge.send('open.preview', {
-                    src: reader.result,
-                    author: response.data.author,
-                  });
-                };
-              });
+            outBridge.send('open.preview', {
+              src: response.data.src,
+              author: response.data.author,
+            });
             break;
           case 'error.fired':
             try {
