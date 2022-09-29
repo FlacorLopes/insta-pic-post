@@ -3,7 +3,7 @@
 Uma extensão para google chrome para copiar fotos do instagram.
 Com ela é possível selecionar uma foto clicando com o botão direito e
 obtê-la, junto com um link para o autor do post.
-Além disso, permite copiar para a área de trabalho o conteúdo selecionado.
+Além disso, permite copiar para a área de transferência o conteúdo selecionado.
 
 Útil para postagens em fóruns e afins.
 ![enter image description here](https://i.imgur.com/RZAMy8J.jpeg)
